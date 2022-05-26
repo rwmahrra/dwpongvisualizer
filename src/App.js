@@ -1,21 +1,67 @@
 import logo from './logo.svg';
 import './App.css';
 
-import {Canvas} from '@react-three/fiber'
+import * as THREE from 'three'
+import {Canvas, useThree, useFrame} from '@react-three/fiber'
 import { OrbitControls, Sky, Environment } from '@react-three/drei';
 
 import AIOpponent from './Models/AIOpponent.js'
+import NNVisualizer from './NNVisualizer';
+import { Suspense, useEffect } from 'react';
+
+
+const mqtt = require('mqtt')
+const client = mqtt.connect(process.env.REACT_APP_URL)
+client.on('connect', function () {
+  client.subscribe('motion/position', function (err) {
+    if (!err) {
+      console.log("player position connected")
+    }
+  })
+});
+
 
 function App() {
+
   return (
-      <Canvas mode="concurrent" camera={{position: [0,0,2.5]}}>
-        <OrbitControls></OrbitControls>
-        <ambientLight intensity={0.5}></ambientLight>
-        <spotLight position={[0,0,5]} angle={0.4} intensity={1.0} />
-        <AIOpponent></AIOpponent>
-        <Sky />
+      <Canvas className='App' mode="concurrent" camera={{position: [0,0,10]}}>
+        {/* <OrbitControls></OrbitControls> */}
+        <spotLight position={[0,0,10]} angle={3} intensity={1.0} />
+        <Suspense fallback={null}>
+          <AIOpponent position={[0,0,5]}></AIOpponent>
+          <NNVisualizer/>
+          <Environment preset="night" />
+          <Rig />
+        </Suspense>
       </Canvas>
   );
 }
+
+
+// can use this function to jitter camera rather than rotate model
+function Rig({ v = new THREE.Vector3() }) {
+  let currentPlayerPosition = 0
+
+  useEffect(()=> {
+    client.on('message', function (topic, message) {
+      // message is Buffer
+      // console.log(topic)
+      // console.log(message.toString())
+      const data = JSON.parse(message.toString());
+      switch (topic) {
+        case "motion/position":
+          // console.log(data)
+          currentPlayerPosition = ((data * 4.8) * 2) - 4.8
+          break
+      }
+
+    })
+  }, [])
+  
+  return useFrame((state) => {
+    state.camera.position.lerp(v.set(currentPlayerPosition / 8, 0, 10), 0.05)
+  })
+}
+
 
 export default App;

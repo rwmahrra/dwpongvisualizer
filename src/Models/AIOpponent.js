@@ -86,13 +86,12 @@ export default function AIOpponent(props) {
   const { nodes, materials } = useGLTF("/AIOpponent.glb");
 
   // we can change emotes based on the changes in these values
-  let currentBallPosition = {x: 0, y: 0}
   let currentPlayerScore = 0
   let currentOpponentScore = 0
   let currentGameLevel = 0
-  let currentPresence = false
 
   let clockStart = false
+  let lastClockValue = 0
 
   let emotionBaseline = [1,0,0,0,0,0,0] // moderately happy
   let emotionTarget = [0,0,0,0,0,0,0]
@@ -114,7 +113,7 @@ export default function AIOpponent(props) {
    * @param {*} targetArray 
    * @param {*} value 
    */
-  let lerpMorphTargets = (targetArray, value) => {
+  const lerpMorphTargets = (targetArray, value) => {
     for (let i = 0; i < 7; i++){
       let newValue = lerp(face.current.morphTargetInfluences[i], targetArray[i], value)
       face.current.morphTargetInfluences[i] = newValue;
@@ -122,9 +121,6 @@ export default function AIOpponent(props) {
   }
   
   useEffect(() => {
-    console.log(face.current.morphTargetDictionary)
-    console.log(face.current.morphTargetInfluences)
-
     client.on('message', function (topic, messsage) {
       const data = JSON.parse(messsage.toString())
       switch(topic) {
@@ -183,24 +179,18 @@ export default function AIOpponent(props) {
 
   useFrame(({clock}) => {
     if(clockStart) {
-      clock.start()
-      console.log("started clock")
+      lastClockValue = clock.getElapsedTime()
       clockStart = false
-      
     }
-    if(clock.getElapsedTime() > 2){
+
+    if(clock.getElapsedTime() - lastClockValue > 2){
       lerpMorphTargets(emotionBaseline, .05)
     } else {
       lerpMorphTargets(emotionTarget, .1)
     }
 
-    group.current.rotation.y = lerp(group.current.rotation.y, rotationTarget, 1)
-
-    group.current.position.x = lerp(group.current.position.x, positionTarget, .1)
-
-    hour.current.rotation.z = lerp(hour.current.rotation.z, -clock.getElapsedTime() / 2, .1)
+    hour.current.rotation.z = lerp(hour.current.rotation.z, -clock.getElapsedTime() / 12, .1)
     minute.current.rotation.z = lerp(minute.current.rotation.z, -clock.getElapsedTime(), .1)
-    
     
   })
 
