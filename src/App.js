@@ -5,8 +5,11 @@ import * as THREE from 'three'
 import {Canvas, useThree, useFrame} from '@react-three/fiber'
 import { OrbitControls, Sky, Environment } from '@react-three/drei';
 
+import { KernelSize } from 'postprocessing'
+import {EffectComposer, Bloom} from "@react-three/postprocessing"
+
 import AIOpponent from './Models/AIOpponent.js'
-import NNVisualizer from './NNVisualizer';
+import NNVisualizer from './Models/NNVisualizer';
 import { Suspense, useEffect } from 'react';
 
 
@@ -32,6 +35,11 @@ function App() {
           <NNVisualizer/>
           <Environment preset="night" />
           <Rig />
+
+          <EffectComposer multisampling={8}>
+            <Bloom kernelSize={3} luminanceThreshold={0} luminanceSmoothing={1} intensity={0.1} />
+            <Bloom kernelSize={KernelSize.HUGE} luminanceThreshold={0} luminanceSmoothing={0} intensity={0.1} /> 
+          </EffectComposer>
         </Suspense>
       </Canvas>
   );
